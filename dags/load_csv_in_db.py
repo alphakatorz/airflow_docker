@@ -77,39 +77,52 @@ def load_entrees_sorties_data(
         hardcoded JSON string.
         """
         csv_path = f"{data_path}/{csv_name}"
-
+        logging.info(f"chargement depuis {csv_path} ..")
         df = pd.read_csv(csv_path)
-
+        logging.info(f"chargement depuis {csv_path} reussi")
         ls_col = []
         for column in df.columns :
             column_clean = process_columns(column)
             ls_col.append(column_clean)
         df.columns = ls_col
+        logging.info(f"nettoyage du df des colonnes reussi")
 
         # creer la connexion a la base de donées
         engine = create_engine(postgres_url)
+        logging.info(f"engine crée")
 
-        # creer le schema du DWH, engine.execute c'est tjr du SQL
-        engine.execute(f"CREATE SCHEMA IF NOT EXISTS {dwh_schema}") 
+        with engine.connect() as connection:
+        
+            # creer le schema du DWH, engine.execute c'est tjr du SQL
+            connection.execute(f"CREATE SCHEMA IF NOT EXISTS {dwh_schema}") 
+            logging.info(f"schema {dwh_schema} reussi")
 
-        # charger le df dans une table de la base de données
-        df.to_sql(name=table_name,con=engine,schema=dwh_schema,if_exists="replace")
-            
+            # charger le df dans une table de la base de données
+            df.to_sql(name=table_name,con=connection,schema=dwh_schema,if_exists="replace")
+            logging.info(f"table {table_name} crée")
             
            
-    transform_csv_to_df_to_table(
-        data_path = data_path, 
-        csv_name = sorties_csv, 
-        postgres_url = postgres_url,
-        dwh_schema = dwh_schema,
-        table_name = sorties_table
-    )
+    # #transform_csv_to_df_to_table(
+    #     data_path = data_path, 
+    #     csv_name = sorties_csv, 
+    #     postgres_url = postgres_url,
+    #     dwh_schema = dwh_schema,
+    #     table_name = sorties_table
+    # )
         
-    transform_csv_to_df_to_table(
-        data_path = data_path, 
-        csv_name = entree_csv, 
-        postgres_url = postgres_url,
-        dwh_schema = dwh_schema,
-        table_name = entree_table
-    )
+    # transform_csv_to_df_to_table(
+    #     data_path = data_path, 
+    #     csv_name = entree_csv, 
+    #     postgres_url = postgres_url,
+    #     dwh_schema = dwh_schema,
+    #     table_name = entree_table
+    # )
+    for input_file in [sorties_csv,entree_csv]:
+        transform_csv_to_df_to_table(
+            data_path = data_path, 
+            csv_name = input_file, 
+            postgres_url = postgres_url,
+            dwh_schema = dwh_schema,
+            table_name = entree_table
+        )
 load_entrees_sorties_data_dag = load_entrees_sorties_data()
